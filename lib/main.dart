@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'models/question.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -41,27 +43,24 @@ class MyHomePage extends StatefulWidget {
 const url_string = 'https://opentdb.com/api.php?amount=10';
 
 class _MyHomePageState extends State<MyHomePage> {
-  dynamic questions;
-
-  void doGet() {
-    http.get(Uri.parse(url_string)).then((response) {
+  Future<List<Question>> fetchQuestions() async {
+    final response = await http.get(Uri.parse(url_string));
+    /*.then((response) {
       var jsondata = json.decode(response.body);
       this.questions = jsondata['results'];
-
-      print(this.questions);
-      // Qui inserisci il codice opportuno per gestire lo stato:
-      setState(() {});
-
-      // debug (esempi di stampa dei dati contenuti nel json)
-      print("First question: " + questions[0]['question']);
-      print("First correct answer: " + questions[0]['correct_answer']);
-      print("Category: " + questions[0]['category']);
+      return 
+    });*/
+    List<Question> questions = [];
+    var result = json.decode(response.body)['results'] as List<dynamic>;
+    result.forEach((value) {
+      questions.add(Question.fromJson(value));
     });
+
+    return questions;
   }
 
   @override
   void initState() {
-    doGet();
     super.initState();
   }
 
@@ -71,31 +70,76 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Column(
-        children: [
-          Text(this.questions[index]['question']),
-          Expanded(
-            child: ListView.builder(
-              itemCount: questions[index].length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text('Lider'),
-                );
-              },
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
+        ),
+        body: FutureBuilder<List<Question>>(
+          future: fetchQuestions(),
+          builder: (ctx, snapshot) {
+            if (snapshot.hasData) {
+              var question = snapshot.data![index];
+              return Column(
+                children: [
+                  Text(question.question),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: question.answers
+                          .length, //questions[index]['incorrect_answers'].length,
+                      itemBuilder: (context, i) {
+                        return ListTile(
+                          title: Text(question.answers[i]),
+                          onTap: () {
+                            _showMyDialog(
+                                question.correct == question.answers[i]);
+                            setState(() {
+                              index++;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            } else if (snapshot.hasError)
+              return Text(snapshot.error.toString());
+            return Text('loading');
+          },
+        )
+        // floatingActionButton: FloatingActionButton(
+        //   onPressed: _incrementCounter,
+        //   tooltip: 'Increment',
+        //   child: Icon(Icons.add),
+        // ), // This trailing comma makes auto-formatting nicer for build methods.
+        );
+  }
+
+  Future<void> _showMyDialog(bool correct) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(correct ? 'Correct' : 'Incorrect!'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(correct ? 'Nice job.' : 'Try again!'),
+              ],
             ),
           ),
-        ],
-      ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _incrementCounter,
-      //   tooltip: 'Increment',
-      //   child: Icon(Icons.add),
-      // ), // This trailing comma makes auto-formatting nicer for build methods.
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Ok'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
