@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:universal_html/html.dart' as html;
 import 'models/question.dart';
 
 void main() {
@@ -43,6 +43,8 @@ class MyHomePage extends StatefulWidget {
 const url_string = 'https://opentdb.com/api.php?amount=10';
 
 class _MyHomePageState extends State<MyHomePage> {
+  late Future<List<Question>> futureQuestions;
+
   Future<List<Question>> fetchQuestions() async {
     final response = await http.get(Uri.parse(url_string));
     /*.then((response) {
@@ -62,6 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+    futureQuestions = fetchQuestions();
   }
 
   int index = 0;
@@ -76,27 +79,41 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: FutureBuilder<List<Question>>(
-          future: fetchQuestions(),
+          future: futureQuestions,
           builder: (ctx, snapshot) {
             if (snapshot.hasData) {
               var question = snapshot.data![index];
               return Column(
                 children: [
-                  Text(question.question),
+                  Container(
+                    margin: const EdgeInsets.all(20),
+                    child: Text(_parseHtmlString(question.question)),
+                  ),
                   Expanded(
                     child: ListView.builder(
                       itemCount: question.answers
                           .length, //questions[index]['incorrect_answers'].length,
                       itemBuilder: (context, i) {
-                        return ListTile(
-                          title: Text(question.answers[i]),
-                          onTap: () {
-                            _showMyDialog(
-                                question.correct == question.answers[i]);
-                            setState(() {
-                              index++;
-                            });
-                          },
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                              side: BorderSide(),
+                              borderRadius: BorderRadius.circular(15)),
+                          child: ListTile(
+                            title: Text(question.answers[i]),
+                            onTap: () {
+                              var correct =
+                                  question.correct == question.answers[i];
+                              _showMyDialog(correct);
+                              setState(() {
+                                if (correct) index++;
+
+                                if (index >= snapshot.data!.length) {
+                                  index = 0;
+                                  futureQuestions = fetchQuestions();
+                                }
+                              });
+                            },
+                          ),
                         );
                       },
                     ),
@@ -105,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             } else if (snapshot.hasError)
               return Text(snapshot.error.toString());
-            return Text('loading');
+            return Text('Loading...');
           },
         )
         // floatingActionButton: FloatingActionButton(
@@ -142,4 +159,9 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
+}
+
+String _parseHtmlString(String htmlString) {
+  var text = html.Element.span()..appendHtml(htmlString);
+  return text.innerText;
 }
