@@ -1,8 +1,12 @@
+// Tortorici Nico, 5CIA, 13/02/2022
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:quiz/pages/StatsPage.dart';
 import 'dart:convert';
-import 'package:universal_html/html.dart' as html;
 import 'models/question.dart';
+import 'models/stats.dart';
+import 'package:html/dom.dart' as htmlParser;
 
 void main() {
   runApp(MyApp());
@@ -15,18 +19,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Quiz',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Quiz'),
     );
   }
 }
@@ -47,36 +42,45 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<List<Question>> fetchQuestions() async {
     final response = await http.get(Uri.parse(url_string));
-    /*.then((response) {
-      var jsondata = json.decode(response.body);
-      this.questions = jsondata['results'];
-      return 
-    });*/
-    List<Question> questions = [];
+    //List<Question> questions = [];
     var result = json.decode(response.body)['results'] as List<dynamic>;
-    result.forEach((value) {
-      questions.add(Question.fromJson(value));
-    });
 
-    return questions;
+    var questions = result.map<Question>((e) => Question.fromJson(e));
+
+    return questions.toList();
   }
 
   @override
   void initState() {
     super.initState();
+    stats = Stats();
     futureQuestions = fetchQuestions();
   }
 
   int index = 0;
   List<String>? answers;
+  late Stats stats;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
           title: Text(widget.title),
+        ),
+        floatingActionButton: Visibility(
+          child: FloatingActionButton(
+            child: const Icon(Icons.bar_chart),
+
+            onPressed: () {
+              var saveStats = stats;
+              Navigator.push(context, MaterialPageRoute(builder: (ctx) => StatsPage(saveStats)));
+
+              setState(() {
+                stats = Stats();
+              });
+            },
+          ),
+          visible: stats.totalAttempts > 0,
         ),
         body: FutureBuilder<List<Question>>(
           future: futureQuestions,
@@ -91,13 +95,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: question.answers
-                          .length, //questions[index]['incorrect_answers'].length,
+                      itemCount: question.answers.length,
+                      //questions[index]['incorrect_answers'].length,
                       itemBuilder: (context, i) {
                         return Card(
                           shape: RoundedRectangleBorder(
-                              side: BorderSide(),
-                              borderRadius: BorderRadius.circular(15)),
+                            side: BorderSide(),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
                           child: ListTile(
                             title: Text(question.answers[i]),
                             onTap: () {
@@ -105,6 +110,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                   question.correct == question.answers[i];
                               _showMyDialog(correct);
                               setState(() {
+                                stats.registerAttempt(correct);
+
                                 if (correct) index++;
 
                                 if (index >= snapshot.data!.length) {
@@ -122,15 +129,11 @@ class _MyHomePageState extends State<MyHomePage> {
               );
             } else if (snapshot.hasError)
               return Text(snapshot.error.toString());
-            return Text('Loading...');
+            return Column(
+              children: [Center(child: CircularProgressIndicator())],
+            );
           },
-        )
-        // floatingActionButton: FloatingActionButton(
-        //   onPressed: _incrementCounter,
-        //   tooltip: 'Increment',
-        //   child: Icon(Icons.add),
-        // ), // This trailing comma makes auto-formatting nicer for build methods.
-        );
+        ));
   }
 
   Future<void> _showMyDialog(bool correct) async {
@@ -143,7 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(correct ? 'Nice job.' : 'Try again!'),
+                Text(correct ? 'Nice job!' : 'Try again!'),
               ],
             ),
           ),
@@ -161,7 +164,4 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-String _parseHtmlString(String htmlString) {
-  var text = html.Element.span()..appendHtml(htmlString);
-  return text.innerText;
-}
+String _parseHtmlString(String htmlString) => htmlParser.DocumentFragment.html(htmlString).text.toString();
