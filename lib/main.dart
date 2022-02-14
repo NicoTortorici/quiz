@@ -119,10 +119,12 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                     ),
                   ),
+                  // Lo skip appare solo dopo aver fatto un tentativo sbagliato.
                   Visibility(
                     visible: !stats.firstAttempt,
                     child: ElevatedButton(
                       onPressed: () {
+                        // Lo skip viene considerato come un tentativo sbagliato.
                         stats.registerAttempt(false, question);
                         _skip(snapshot.data!.length);
                       },
@@ -141,6 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ));
   }
 
+  // Salta la risposta.
   void _skip(int numOfQuestions) {
     setState(() {
       index++;
@@ -153,6 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Termina il quiz.
   void _endQuiz() {
     var saveStats = stats;
     Navigator.push(
@@ -175,6 +179,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (correct) _skip(numOfQuestions);
     });
 
+    // Se finiscono le vite, termina il quiz.
     if (stats.lives <= 0) _endQuiz();
   }
 

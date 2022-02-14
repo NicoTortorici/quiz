@@ -14,32 +14,39 @@ class Stats {
 
   void registerAttempt(bool correct, Question question) {
     _totalAttempts++;
+
+    // Se è il primo tentativo registriamo sempre la risposta.
     if (firstAttempt) _totalQuestions++;
 
     if (correct) {
       if (firstAttempt) {
+        // Solo i primi tentativi contano per il punteggio.
         _correctAtFirst++;
         _score += question.difficulty * 10;
       }
       firstAttempt = true;
     } else {
+      // Se il primo tentativo è sbagliato, sottraiamo una vita.
       if (firstAttempt) _lives--;
       firstAttempt = false;
     }
   }
 
+  // Tutti i getters
   int get totalAttempts => _totalAttempts;
   int get correct => _correctAtFirst;
+  // Calcolabile
   int get incorrect => _totalQuestions - correct;
   int get score => _score;
   int get percentage =>
       ((correct.toDouble()) / (_totalQuestions.toDouble()) * 100).toInt();
   int get lives => _lives;
-
+  // Tentativi medi per domanda.
   double get averageAttempts =>
       (_totalAttempts.toDouble() / _totalQuestions.toDouble());
 }
 
+// Questo oggetto verrà utilizzato dalla libreria charts_flutter per creare il grafico.
 class ChartData {
   String title;
   int value;

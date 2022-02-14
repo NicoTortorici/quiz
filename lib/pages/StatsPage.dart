@@ -32,9 +32,11 @@ class StatsPage extends StatelessWidget {
                       ],
                       domainFn: (x, _) => x.title,
                       measureFn: (x, _) => x.value,
+                      // Formato della statistica, e.g. "Correct: 2"
                       labelAccessorFn: (x, _) => "${x.title}: ${x.value}",
                       colorFn: (x, _) => x.color),
                 ],
+                // Serve a piazzare il testo.
                 defaultRenderer: new charts.ArcRendererConfig(
                   arcWidth: 200,
                   arcRendererDecorators: [new charts.ArcLabelDecorator()],
@@ -65,6 +67,7 @@ class StatsPage extends StatelessWidget {
               style: TextStyle(fontSize: 20),
             ),
           ),
+          // Basta chiudere la pagina, il quiz è già stato ripristinato.
           ElevatedButton(
             child: Text("Start new quiz"),
             onPressed: () {
