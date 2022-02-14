@@ -18,7 +18,8 @@ class StatsPage extends StatelessWidget {
       body: Column(
         children: [
           Expanded(
-            child: Container(
+            child: Padding(
+              padding: EdgeInsets.all(15),
               child: charts.PieChart<String>(
                 [
                   charts.Series<ChartData, String>(
@@ -35,7 +36,7 @@ class StatsPage extends StatelessWidget {
                       colorFn: (x, _) => x.color),
                 ],
                 defaultRenderer: new charts.ArcRendererConfig(
-                  arcWidth: 60,
+                  arcWidth: 200,
                   arcRendererDecorators: [new charts.ArcLabelDecorator()],
                 ),
               ),
@@ -57,6 +58,12 @@ class StatsPage extends StatelessWidget {
           Container(
             child: Text(
                 "Average attempts per answer: ${_stats.averageAttempts.toStringAsFixed(1)}"),
+          ),
+          Container(
+            child: Text(
+              "Your Score: ${_stats.score}",
+              style: TextStyle(fontSize: 20),
+            ),
           ),
           ElevatedButton(
             child: Text("Start new quiz"),
